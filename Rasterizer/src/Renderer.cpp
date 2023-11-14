@@ -43,16 +43,41 @@ void Renderer::Render()
 	//Lock BackBuffer
 	SDL_LockSurface(m_pBackBuffer);
 
+	Vertex v0{ {0.f, 0.5f, 1.f} };
+	Vertex v1{ {0.5f, -0.5f, 1.f} };
+	Vertex v2{ {-0.5f, -0.5f, 1.f} };
+
+	std::vector<Vector2> screenSpaceVertex
+	{
+		{((v0.position.x + 1) / 2) * m_Width, ((1 - v0.position.y) / 2) * m_Height},
+		{((v1.position.x + 1) / 2) * m_Width, ((1 - v1.position.y) / 2) * m_Height},
+		{((v2.position.x + 1) / 2) * m_Width, ((1 - v2.position.y) / 2) * m_Height},
+	};
+
 	//RENDER LOGIC
 	for (int px{}; px < m_Width; ++px)
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
-			float gradient = px / static_cast<float>(m_Width);
-			gradient += py / static_cast<float>(m_Width);
-			gradient /= 2.0f;
+			float pixelColor = 0;
+			Vector2 pixel{ px + 0.5f, py + 0.5f };
+			bool hitAll{ true };
+			for(int index{}; index < static_cast<int>(screenSpaceVertex.size()); ++index)
+			{
+				Vector2 vertexVector{ screenSpaceVertex[(index + 1) % 3] - screenSpaceVertex[index] };
+				Vector2 pixelVector{ pixel - screenSpaceVertex[index] };
+				if(Vector2::Cross(vertexVector, pixelVector) <= 0)
+				{
+					hitAll = false;
+				}
+			}
 
-			ColorRGB finalColor{ gradient, gradient, gradient };
+			if(hitAll)
+			{
+				pixelColor = 255;
+			}
+
+			ColorRGB finalColor{ pixelColor, pixelColor, pixelColor };
 
 			//Update Color in Buffer
 			finalColor.MaxToOne();
