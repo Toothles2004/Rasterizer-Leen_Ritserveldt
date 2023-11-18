@@ -57,6 +57,7 @@ namespace dae
 
 			//ViewMatrix => Matrix::CreateLookAtLH(...) [not implemented yet]
 			//DirectX Implementation => https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
+			Matrix::CreateLookAtLH(origin, forward, up);
 		}
 
 		void CalculateProjectionMatrix()
@@ -70,13 +71,17 @@ namespace dae
 		void Update(Timer* pTimer)
 		{
 			const float deltaTime = pTimer->GetElapsed();
+			float tempFov = fov;
 
 			//Camera Update Logic
 			//...
 
 			//Update Matrices
 			CalculateViewMatrix();
-			CalculateProjectionMatrix(); //Try to optimize this - should only be called once or when fov/aspectRatio changes
+			if(abs(tempFov - fov) > 0.0001f)
+			{
+				CalculateProjectionMatrix(); //Try to optimize this - should only be called once or when fov/aspectRatio changes
+			}
 		}
 	};
 }
