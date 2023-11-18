@@ -43,41 +43,51 @@ void Renderer::Render()
 	//Lock BackBuffer
 	SDL_LockSurface(m_pBackBuffer);
 
-	Vertex v0{ {0.f, 0.5f, 1.f} };
+	/*Vertex v0{ {0.f, 0.5f, 1.f} };
 	Vertex v1{ {0.5f, -0.5f, 1.f} };
-	Vertex v2{ {-0.5f, -0.5f, 1.f} };
+	Vertex v2{ {-0.5f, -0.5f, 1.f} };*/
 
-	std::vector<Vector2> screenSpaceVertex
-	{
-		{((v0.position.x + 1) / 2) * m_Width, ((1 - v0.position.y) / 2) * m_Height},
-		{((v1.position.x + 1) / 2) * m_Width, ((1 - v1.position.y) / 2) * m_Height},
-		{((v2.position.x + 1) / 2) * m_Width, ((1 - v2.position.y) / 2) * m_Height},
-	};
+	const std::vector<Vertex> triangle{ {{0.f, 2.f, 0.f}}, {{1.f, 0.f, 0.f}}, {{-1.f, 0.f, 0.f}} };
+
+	std::vector<Vertex> transformTriangle{};
+
+	VertexTransformationFunction(triangle, transformTriangle);
 
 	//RENDER LOGIC
 	for (int px{}; px < m_Width; ++px)
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
-			float pixelColor = 0;
+			ColorRGB pixelColor = colors::Black;
 			Vector2 pixel{ px + 0.5f, py + 0.5f };
 			bool hitAll{ true };
-			for(int index{}; index < static_cast<int>(screenSpaceVertex.size()); ++index)
+
+			for (int index{}; index < static_cast<int>(transformTriangle.size()); ++index)
 			{
-				Vector2 vertexVector{ screenSpaceVertex[(index + 1) % 3] - screenSpaceVertex[index] };
-				Vector2 pixelVector{ pixel - screenSpaceVertex[index] };
-				if(Vector2::Cross(vertexVector, pixelVector) <= 0)
+				Vector2 vertexVector
+				{
+					transformTriangle[(index + 1) % 3].position.x - transformTriangle[index].position.x,
+					transformTriangle[(index + 1) % 3].position.y - transformTriangle[index].position.y
+				};
+
+				Vector2 pixelVector
+				{
+					pixel.x - transformTriangle[index].position.x,
+					pixel.y - transformTriangle[index].position.y
+				};
+
+				if (Vector2::Cross(vertexVector, pixelVector) <= 0)
 				{
 					hitAll = false;
 				}
 			}
 
-			if(hitAll)
+			if (hitAll)
 			{
-				pixelColor = 255;
+				pixelColor = colors::White;
 			}
 
-			ColorRGB finalColor{ pixelColor, pixelColor, pixelColor };
+			ColorRGB finalColor{ pixelColor };
 
 			//Update Color in Buffer
 			finalColor.MaxToOne();
@@ -99,6 +109,27 @@ void Renderer::Render()
 void Renderer::VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex>& vertices_out) const
 {
 	//Todo > W1 Projection Stage
+
+	for(const auto& vertex : vertices_in)
+	{
+		//World -> view space
+		Vector3 tempVertex = m_Camera.viewMatrix.TransformPoint(vertex.position) ;
+		const float aspectRatio{ (static_cast<float>(m_Width) / static_cast<float>(m_Height)) };
+
+		tempVertex.x /= aspectRatio  * m_Camera.fov;
+
+		//pespective divide = View space -> clipping space (NDC)
+		tempVertex.x /= tempVertex.z;
+		tempVertex.y /= tempVertex.z;
+
+		//NDC -> screen space
+		const Vertex screenSpaceVertex
+		{
+			{((tempVertex.x + 1) / 2) * m_Width, ((1 - tempVertex.y) / 2) * m_Height, 0}
+		};
+
+		vertices_out.push_back(screenSpaceVertex);
+	}
 }
 
 bool Renderer::SaveBufferToImage() const
