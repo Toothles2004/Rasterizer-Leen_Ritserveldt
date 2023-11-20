@@ -71,6 +71,23 @@ void Renderer::Render()
 
 	VertexTransformationFunction(triangle, transformTriangle);
 
+	std::vector<TriangleBoundingBox> boundingBox{};
+
+	for(int triangleIndex{}; triangleIndex < static_cast<int>(transformTriangle.size()); triangleIndex += 3)
+	{
+		TriangleBoundingBox tempBox{};
+
+		Vector2 v0{ transformTriangle[triangleIndex].position.x, transformTriangle[triangleIndex].position.y };
+		Vector2 v1{ transformTriangle[triangleIndex + 1].position.x, transformTriangle[triangleIndex + 1].position.y};
+		Vector2 v2{ transformTriangle[triangleIndex + 2].position.x, transformTriangle[triangleIndex + 2].position.y};
+
+		tempBox.CalculateBoundingBox(v0);
+		tempBox.CalculateBoundingBox(v1);
+		tempBox.CalculateBoundingBox(v2);
+
+		boundingBox.push_back(tempBox);
+	}
+
 	//RENDER LOGIC
 	for (int px{}; px < m_Width; ++px)
 	{
@@ -78,9 +95,16 @@ void Renderer::Render()
 		{
 			for(int triangleIndex{}; triangleIndex < static_cast<int>(transformTriangle.size()); triangleIndex += 3)
 			{
+				Vector2 pixel{ px + 0.5f, py + 0.5f };
+
+				if(!(boundingBox[triangleIndex / 3].IsPointInBoundingBox(pixel)))
+				{
+					continue;
+				}
+
 				float pixelDepth{};
 				ColorRGB pixelColor{};
-				Vector2 pixel{ px + 0.5f, py + 0.5f };
+				
 				bool hitAll{ true };
 
 				const Vector2 vector1

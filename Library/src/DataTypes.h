@@ -39,4 +39,24 @@ namespace dae
 		std::vector<Vertex_Out> vertices_out{};
 		Matrix worldMatrix{};
 	};
+
+	struct TriangleBoundingBox
+	{
+		Vector2 min{};
+		Vector2 max{};
+
+		bool IsPointInBoundingBox(const Vector2& pos) const
+		{
+			return ((pos.x >= min.x) && (pos.y >= min.y) && (pos.x <= max.x) && (pos.y <= max.y));
+		}
+
+		void CalculateBoundingBox(const Vector2& pos)
+		{
+			min.x = std::min(min.x, pos.x);
+			min.y = std::min(min.y, pos.y);
+			max.x = std::max(max.x, pos.x);
+			max.y = std::max(max.y, pos.y);
+			
+		}
+	};
 }
