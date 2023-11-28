@@ -15,6 +15,7 @@ namespace dae
 	struct Vertex;
 	class Timer;
 	class Scene;
+	struct TriangleBoundingBox;
 
 	class Renderer final
 	{
@@ -33,6 +34,9 @@ namespace dae
 		bool SaveBufferToImage() const;
 
 		void VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex>& vertices_out) const;
+		void VertexTransformationFunction(const std::vector<Mesh>& mesh_in, std::vector<Mesh>& mesh_out) const;
+		void CreateBoundingBox(const std::vector<Mesh>& mesh_in, std::vector<TriangleBoundingBox>& boundingBox_out) const;
+		void CreateBoundingBox(const std::vector<Vertex>& mesh_in, std::vector<TriangleBoundingBox>& boundingBox_out) const;
 
 	private:
 		SDL_Window* m_pWindow{};

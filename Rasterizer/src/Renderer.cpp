@@ -54,123 +54,205 @@ void Renderer::Render()
 	Vertex v2{ {-0.5f, -0.5f, 1.f} };*/
 
 	//const std::vector<Vertex> triangle{ {{0.f, 2.f, 0.f}}, {{1.f, 0.f, 0.f}}, {{-1.f, 0.f, 0.f}} };
-	const std::vector<Vertex> triangle
-	{
-		//Triangle 0
-		{{0.f, 2.f, 0.f}, {1, 0, 0}},
-		{{1.5f, -1.f, 0.f}, {1, 0, 0}},
-		{{-1.5f, -1.f, 0.f}, {1, 0, 0}},
 
-		//Triangle 1
-		{{0.f, 4.f, 2.f}, {1, 0, 0}},
-		{{3.0f, -2.f, 2.f}, {0, 1, 0}},
-		{{-3.f, -2.f, 2.f}, {0, 0, 1}}
+	//const std::vector<Vertex> triangle
+	//{
+	//	//Triangle 0
+	//	{{0.f, 2.f, 0.f}, {1, 0, 0}},
+	//	{{1.5f, -1.f, 0.f}, {1, 0, 0}},
+	//	{{-1.5f, -1.f, 0.f}, {1, 0, 0}},
+
+	//	//Triangle 1
+	//	{{0.f, 4.f, 2.f}, {1, 0, 0}},
+	//	{{3.0f, -2.f, 2.f}, {0, 1, 0}},
+	//	{{-3.f, -2.f, 2.f}, {0, 0, 1}}
+	//};
+
+	//const std::vector<Vertex> triangle
+	//{
+	//	{{meshesWorld[3].position}, {1, 1, 1}}, //Triangle 0 (3,0,4)
+	//	{{meshesWorld[0].position}, {1, 1, 1}}, //Triangle 1 (0, 4, 1)
+	//	{{meshesWorld[4].position}, {1, 1, 1}}, //Triangle 2 (4, 1, 5)
+	//	{{meshesWorld[1].position}, {1, 1, 1}}, //Triangle 3 (1, 5, 2)
+	//	{{meshesWorld[5].position}, {1, 1, 1}},
+	//	{{meshesWorld[2].position}, {1, 1, 1}},
+	//	{{meshesWorld[2].position}, {1, 1, 1}},
+
+	//	{{meshesWorld[6].position}, {1, 1, 1}},
+	//	{{meshesWorld[6].position}, {1, 1, 1}}, //Triangle 4 (6, 3, 7)
+	//	{{meshesWorld[3].position}, {1, 1, 1}}, //Triangle 5 (3, 7, 4)
+	//	{{meshesWorld[7].position}, {1, 1, 1}}, //Triangle 6 (7, 4, 8)
+	//	{{meshesWorld[4].position}, {1, 1, 1}}, //Triangle 7 (4, 8, 5)
+	//	{{meshesWorld[8].position}, {1, 1, 1}},
+	//	{{meshesWorld[5].position}, {1, 1, 1}},
+	//};
+
+	//TriangleStrip
+	const std::vector<Mesh> meshesWorldStrip
+	{
+		//Quad
+		Mesh
+		{
+			{
+			Vertex{{-3.f, 3.f, -2.f}},
+			Vertex{{0.f, 3.f, -2.f}},
+			Vertex{{3.f, 3.f, -2.f}},
+			Vertex{{-3.f, 0.f, -2.f}},
+			Vertex{{0.f, 0.f, -2.f}},
+			Vertex{{3.f, 0.f, -2.f}},
+			Vertex{{-3.f, -3.f, -2.f}},
+			Vertex{{0.f, -3.f, -2.f}},
+			Vertex{{3.f, -3.f, -2.f}}
+			},
+
+			{
+				3, 0, 4, 1, 5, 2,
+				2, 6,
+				6, 3, 7, 4, 8, 5
+			},
+
+			PrimitiveTopology::TriangleStrip
+		}
 	};
 
-	std::vector<Vertex> transformTriangle{};
-
-	VertexTransformationFunction(triangle, transformTriangle);
-
-	std::vector<TriangleBoundingBox> boundingBox{};
-
-	for(int triangleIndex{}; triangleIndex < static_cast<int>(transformTriangle.size()); triangleIndex += 3)
+	//TriangleList
+	const std::vector<Mesh> meshesWorldList
 	{
-		TriangleBoundingBox tempBox{};
+		//Quad
+		Mesh
+		{
+			{
+			Vertex{{-3.f, 3.f, -2.f}},
+			Vertex{{0.f, 3.f, -2.f}},
+			Vertex{{3.f, 3.f, -2.f}},
+			Vertex{{-3.f, 0.f, -2.f}},
+			Vertex{{0.f, 0.f, -2.f}},
+			Vertex{{3.f, 0.f, -2.f}},
+			Vertex{{-3.f, -3.f, -2.f}},
+			Vertex{{0.f, -3.f, -2.f}},
+			Vertex{{3.f, -3.f, -2.f}}
+			},
 
-		Vector2 v0{ transformTriangle[triangleIndex].position.x, transformTriangle[triangleIndex].position.y };
-		Vector2 v1{ transformTriangle[triangleIndex + 1].position.x, transformTriangle[triangleIndex + 1].position.y};
-		Vector2 v2{ transformTriangle[triangleIndex + 2].position.x, transformTriangle[triangleIndex + 2].position.y};
+			{
+				3, 0, 1,	1, 4, 3,	4, 1, 2,
+				2, 5, 4,	6, 3, 4,	4, 7, 6,
+				7, 4, 5,	5, 8, 7
+			},
 
-		tempBox.CalculateBoundingBox(v0);
-		tempBox.CalculateBoundingBox(v1);
-		tempBox.CalculateBoundingBox(v2);
+			PrimitiveTopology::TriangleList
+		}
+	};
 
-		boundingBox.push_back(tempBox);
-	}
+	std::vector<Mesh> transformMesh{ };
+	VertexTransformationFunction(meshesWorldList, transformMesh);
 
 	//RENDER LOGIC
-	for (int px{}; px < m_Width; ++px)
+	for (auto& mesh : transformMesh)
 	{
-		for (int py{}; py < m_Height; ++py)
+		//Check all triangles
+		for (int triangleIndex{}; triangleIndex < static_cast<int>(mesh.indices.size() - 2); ++triangleIndex)
 		{
-			for(int triangleIndex{}; triangleIndex < static_cast<int>(transformTriangle.size()); triangleIndex += 3)
-			{
-				Vector2 pixel{ px + 0.5f, py + 0.5f };
+			uint32_t vertex0{ mesh.indices[triangleIndex] };
+			uint32_t vertex1{ mesh.indices[triangleIndex + 1] };
+			uint32_t vertex2{ mesh.indices[triangleIndex + 2] };
 
-				if(!(boundingBox[triangleIndex / 3].IsPointInBoundingBox(pixel)))
+			//Do triangleStrip
+			if (mesh.primitiveTopology == PrimitiveTopology::TriangleStrip)
+			{
+				//Check degenerate triangles
+				if ((mesh.indices[vertex0] == mesh.indices[vertex1]) && (mesh.indices[vertex1] == mesh.indices[vertex2]))
 				{
 					continue;
 				}
 
-				float pixelDepth{};
-				ColorRGB pixelColor{};
-				
-				bool hitAll{ true };
-
-				const Vector2 vector1
+				//If triangleIndex is odd, swap 2nd and 3rd element
+				if (((triangleIndex % 2) == 1))
 				{
-					transformTriangle[triangleIndex+1].position.x - transformTriangle[triangleIndex].position.x,
-					transformTriangle[triangleIndex+1].position.y - transformTriangle[triangleIndex].position.y
+					std::swap(vertex1, vertex2);
+				}
+			}
+			//Do triangleList
+			else if(mesh.primitiveTopology == PrimitiveTopology::TriangleList)
+			{
+				triangleIndex += 2;
+			}
+			
+			//Create triangle vectors
+			const Vector2 v0{ mesh.vertices[vertex0].position.x, mesh.vertices[vertex0].position.y };
+			const Vector2 v1{ mesh.vertices[vertex1].position.x, mesh.vertices[vertex1].position.y };
+			const Vector2 v2{ mesh.vertices[vertex2].position.x, mesh.vertices[vertex2].position.y };
 
-				};
-				const Vector2 vector2
+			const float totalTriangleArea{ Vector2::Cross(v1 - v0, v2 - v0) / 2 };
+
+			//Create bounding box
+			TriangleBoundingBox boundingBox{};
+			boundingBox.CalculateBoundingBox(v0);
+			boundingBox.CalculateBoundingBox(v1);
+			boundingBox.CalculateBoundingBox(v2);
+
+			//Do pixel loop
+			for (int px{}; px < m_Width; ++px)
+			{
+				for (int py{}; py < m_Height; ++py)
 				{
-					transformTriangle[triangleIndex+2].position.x - transformTriangle[triangleIndex].position.x,
-					transformTriangle[triangleIndex+2].position.y - transformTriangle[triangleIndex].position.y
+					
+					Vector2 pixel{ px + 0.5f, py + 0.5f };
 
-				};
-				const float totalTriangleArea{ Vector2::Cross(vector1, vector2) / 2 };
-
-				for (int trianglePointIndex{}; trianglePointIndex < 3; ++trianglePointIndex)
-				{
-					const int indexP0{ triangleIndex + ((trianglePointIndex + 1) % 3) };
-					const int indexP1{ triangleIndex + ((trianglePointIndex + 2) % 3) };
-					const int indexP2{ triangleIndex + ((trianglePointIndex + 3) % 3) };
-
-					Vector2 vertexVector
+					//Ignore and continue if pixel is not in the bounding box
+					if (!(boundingBox.IsPointInBoundingBox(pixel)))
 					{
-						transformTriangle[indexP1].position.x - transformTriangle[indexP0].position.x,
-						transformTriangle[indexP1].position.y - transformTriangle[indexP0].position.y
-					};
-
-					Vector2 pixelVector
-					{
-						pixel.x - transformTriangle[indexP0].position.x,
-						pixel.y - transformTriangle[indexP0].position.y
-					};
-
-					float weight{ Vector2::Cross(vertexVector, pixelVector) / 2 };
-					weight /= totalTriangleArea;
-
-					if (weight <= 0)
-					{
-						hitAll = false;
+						continue;
 					}
 
-					pixelColor += transformTriangle[indexP2].color * weight;
-					pixelDepth += transformTriangle[indexP2].position.z * weight;
+					float pixelDepth{};
+					ColorRGB pixelColor{};
+
+					//If pixel not in triangle skip to next pixel
+					const float weightV0{ (Vector2::Cross(v2 - v1, pixel - v1) / 2.f) / totalTriangleArea };
+					if (weightV0 < 0)
+					{
+						continue;
+					}
+					const float weightV1{ (Vector2::Cross(v0 - v2, pixel - v2) / 2.f) / totalTriangleArea };
+					if (weightV1 < 0)
+					{
+						continue;
+					}
+					const float weightV2{ (Vector2::Cross(v1 - v0, pixel - v0) / 2.f) / totalTriangleArea };
+					if (weightV2 < 0)
+					{
+						continue;
+					}
+
+					pixelColor =
+						mesh.vertices[vertex0].color * weightV0 +
+						mesh.vertices[vertex1].color * weightV1 +
+						mesh.vertices[vertex2].color * weightV2;
+
+					pixelDepth =
+						mesh.vertices[vertex0].position.z * weightV0 +
+						mesh.vertices[vertex1].position.z * weightV1 +
+						mesh.vertices[vertex2].position.z * weightV2;
+
+					//If the z point is not closer in this triangle check the next triangle
+					if (!(pixelDepth < m_pDepthBufferPixels[px + (py * m_Width)]))
+					{
+						continue;
+					}
+
+					//Set z buffer to closer point
+					m_pDepthBufferPixels[px + (py * m_Width)] = pixelDepth;
+
+					ColorRGB finalColor{ pixelColor };
+
+					//Update Color in Buffer
+					finalColor.MaxToOne();
+
+					m_pBackBufferPixels[px + (py * m_Width)] = SDL_MapRGB(m_pBackBuffer->format,
+						static_cast<uint8_t>(finalColor.r * 255),
+						static_cast<uint8_t>(finalColor.g * 255),
+						static_cast<uint8_t>(finalColor.b * 255));
 				}
-
-				if (!hitAll)
-				{
-					continue;
-				}
-				if(!(pixelDepth < m_pDepthBufferPixels[px+(py*m_Width)]))
-				{
-					continue;
-				}
-
-				m_pDepthBufferPixels[px + (py * m_Width)] = pixelDepth;
-
-				ColorRGB finalColor{ pixelColor };
-
-				//Update Color in Buffer
-				finalColor.MaxToOne();
-
-				m_pBackBufferPixels[px + (py * m_Width)] = SDL_MapRGB(m_pBackBuffer->format,
-					static_cast<uint8_t>(finalColor.r * 255),
-					static_cast<uint8_t>(finalColor.g * 255),
-					static_cast<uint8_t>(finalColor.b * 255));
 			}
 		}
 	}
@@ -203,6 +285,16 @@ void Renderer::VertexTransformationFunction(const std::vector<Vertex>& vertices_
 		Vertex screenSpaceVertex{ vertex };
 		screenSpaceVertex.position =  { ((tempVertex.x + 1) / 2) * m_Width, ((1 - tempVertex.y) / 2) * m_Height, tempVertex.z } ;
 		vertices_out.push_back(screenSpaceVertex);
+	}
+}
+
+void Renderer::VertexTransformationFunction(const std::vector<Mesh>& mesh_in, std::vector<Mesh>& mesh_out) const
+{
+	mesh_out = mesh_in;
+	for(int index{}; index < mesh_in.size(); ++index)
+	{
+		mesh_out[index].vertices = {};
+		VertexTransformationFunction(mesh_in[index].vertices, mesh_out[index].vertices);
 	}
 }
 
