@@ -232,13 +232,15 @@ void Renderer::Render()
 						mesh.vertices[vertex1].color * weightV1 +
 						mesh.vertices[vertex2].color * weightV2;*/
 
-					pixelDepth =
-						mesh.vertices[vertex0].position.z * weightV0 +
-						mesh.vertices[vertex1].position.z * weightV1 +
-						mesh.vertices[vertex2].position.z * weightV2;
+					pixelDepth = 1.f / 
+						(
+							(weightV0 / mesh.vertices[vertex0].position.z) + 
+							(weightV1 / mesh.vertices[vertex1].position.z) + 
+							(weightV2 / mesh.vertices[vertex2].position.z)
+						);
 
 					//If the z point is not closer in this triangle check the next triangle
-					if (!(pixelDepth < m_pDepthBufferPixels[px + (py * m_Width)]))
+					if (!(pixelDepth <= m_pDepthBufferPixels[px + (py * m_Width)]))
 					{
 						continue;
 					}
@@ -247,9 +249,14 @@ void Renderer::Render()
 					m_pDepthBufferPixels[px + (py * m_Width)] = pixelDepth;
 
 					pixelUV =
-						mesh.vertices[vertex0].uv * weightV0 +
-						mesh.vertices[vertex1].uv * weightV1 +
-						mesh.vertices[vertex2].uv * weightV2;
+						(
+							((mesh.vertices[vertex0].uv * weightV0) / mesh.vertices[vertex0].position.z) +
+							((mesh.vertices[vertex1].uv * weightV1) / mesh.vertices[vertex1].position.z) +
+							((mesh.vertices[vertex2].uv * weightV2) / mesh.vertices[vertex2].position.z)
+						) * pixelDepth;
+
+					pixelUV.x = std::clamp(pixelUV.x, 0.f, 1.f);
+					pixelUV.y = std::clamp(pixelUV.y, 0.f, 1.f);
 
 					ColorRGB finalColor{ m_pTexture->Sample(pixelUV) };
 
