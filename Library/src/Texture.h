@@ -20,5 +20,9 @@ namespace dae
 
 		SDL_Surface* m_pSurface{ nullptr };
 		uint32_t* m_pSurfacePixels{ nullptr };
+
+		Uint8* m_Red{ nullptr };
+		Uint8* m_Green{ nullptr };
+		Uint8* m_Blue{ nullptr };
 	};
 }

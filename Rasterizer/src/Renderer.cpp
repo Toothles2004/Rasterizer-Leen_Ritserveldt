@@ -25,6 +25,8 @@ Renderer::Renderer(SDL_Window* pWindow) :
 
 	//Initialize Camera
 	m_Camera.Initialize(60.f, { .0f,.0f, -10.f });
+
+	m_pTexture = Texture::LoadFromFile("Resources/uv_grid_2.png");
 }
 
 Renderer::~Renderer()
@@ -94,15 +96,15 @@ void Renderer::Render()
 		Mesh
 		{
 			{
-			Vertex{{-3.f, 3.f, -2.f}},
-			Vertex{{0.f, 3.f, -2.f}},
-			Vertex{{3.f, 3.f, -2.f}},
-			Vertex{{-3.f, 0.f, -2.f}},
-			Vertex{{0.f, 0.f, -2.f}},
-			Vertex{{3.f, 0.f, -2.f}},
-			Vertex{{-3.f, -3.f, -2.f}},
-			Vertex{{0.f, -3.f, -2.f}},
-			Vertex{{3.f, -3.f, -2.f}}
+			Vertex{{-3.f, 3.f, -2.f}, {}, {0, 0}},
+			Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
+			Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
+			Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
+			Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
+			Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
+			Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
+			Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
+			Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
 			},
 
 			{
@@ -122,15 +124,15 @@ void Renderer::Render()
 		Mesh
 		{
 			{
-			Vertex{{-3.f, 3.f, -2.f}},
-			Vertex{{0.f, 3.f, -2.f}},
-			Vertex{{3.f, 3.f, -2.f}},
-			Vertex{{-3.f, 0.f, -2.f}},
-			Vertex{{0.f, 0.f, -2.f}},
-			Vertex{{3.f, 0.f, -2.f}},
-			Vertex{{-3.f, -3.f, -2.f}},
-			Vertex{{0.f, -3.f, -2.f}},
-			Vertex{{3.f, -3.f, -2.f}}
+			Vertex{{-3.f, 3.f, -2.f}, {}, { 0, 0}},
+			Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
+			Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
+			Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
+			Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
+			Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
+			Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
+			Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
+			Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
 			},
 
 			{
@@ -144,7 +146,7 @@ void Renderer::Render()
 	};
 
 	std::vector<Mesh> transformMesh{ };
-	VertexTransformationFunction(meshesWorldList, transformMesh);
+	VertexTransformationFunction(meshesWorldStrip, transformMesh);
 
 	//RENDER LOGIC
 	for (auto& mesh : transformMesh)
@@ -205,7 +207,8 @@ void Renderer::Render()
 					}
 
 					float pixelDepth{};
-					ColorRGB pixelColor{};
+					/*ColorRGB pixelColor{};*/
+					Vector2 pixelUV{};
 
 					//If pixel not in triangle skip to next pixel
 					const float weightV0{ (Vector2::Cross(v2 - v1, pixel - v1) / 2.f) / totalTriangleArea };
@@ -224,10 +227,10 @@ void Renderer::Render()
 						continue;
 					}
 
-					pixelColor =
+					/*pixelColor =
 						mesh.vertices[vertex0].color * weightV0 +
 						mesh.vertices[vertex1].color * weightV1 +
-						mesh.vertices[vertex2].color * weightV2;
+						mesh.vertices[vertex2].color * weightV2;*/
 
 					pixelDepth =
 						mesh.vertices[vertex0].position.z * weightV0 +
@@ -243,7 +246,12 @@ void Renderer::Render()
 					//Set z buffer to closer point
 					m_pDepthBufferPixels[px + (py * m_Width)] = pixelDepth;
 
-					ColorRGB finalColor{ pixelColor };
+					pixelUV =
+						mesh.vertices[vertex0].uv * weightV0 +
+						mesh.vertices[vertex1].uv * weightV1 +
+						mesh.vertices[vertex2].uv * weightV2;
+
+					ColorRGB finalColor{ m_pTexture->Sample(pixelUV) };
 
 					//Update Color in Buffer
 					finalColor.MaxToOne();
