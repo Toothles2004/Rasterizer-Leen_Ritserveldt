@@ -24,7 +24,7 @@ Renderer::Renderer(SDL_Window* pWindow) :
 	m_pDepthBufferPixels = new float[m_Width * m_Height];
 
 	//Initialize Camera
-	m_Camera.Initialize(60.f, { .0f,.0f, -10.f });
+	m_Camera.Initialize(static_cast<float>(m_Width) / m_Height, 60.f, { .0f,.0f, -10.f });
 
 	m_pTexture = Texture::LoadFromFile("Resources/uv_grid_2.png");
 }
@@ -90,7 +90,7 @@ void Renderer::Render()
 	//};
 
 	//TriangleStrip
-	const std::vector<Mesh> meshesWorldStrip
+	std::vector<Mesh> meshesWorldStrip
 	{
 		//Quad
 		Mesh
@@ -118,7 +118,7 @@ void Renderer::Render()
 	};
 
 	//TriangleList
-	const std::vector<Mesh> meshesWorldList
+	std::vector<Mesh> meshesWorldList
 	{
 		//Quad
 		Mesh
@@ -145,11 +145,10 @@ void Renderer::Render()
 		}
 	};
 
-	std::vector<Mesh> transformMesh{ };
-	VertexTransformationFunction(meshesWorldStrip, transformMesh);
+	VertexTransformationFunction(meshesWorldStrip);
 
 	//RENDER LOGIC
-	for (auto& mesh : transformMesh)
+	for (auto& mesh : meshesWorldStrip)
 	{
 		//Check all triangles
 		for (int triangleIndex{}; triangleIndex < static_cast<int>(mesh.indices.size() - 2); ++triangleIndex)
@@ -178,11 +177,21 @@ void Renderer::Render()
 			{
 				triangleIndex += 2;
 			}
+
+			if
+				(
+					(mesh.vertices_out[vertex0].position.z < 0 || 1 < mesh.vertices_out[vertex0].position.z) ||
+					(mesh.vertices_out[vertex1].position.z < 0 || 1 < mesh.vertices_out[vertex1].position.z) ||
+					(mesh.vertices_out[vertex2].position.z < 0 || 1 < mesh.vertices_out[vertex2].position.z)
+				)
+			{
+				continue;
+			}
 			
 			//Create triangle vectors
-			const Vector2 v0{ mesh.vertices[vertex0].position.x, mesh.vertices[vertex0].position.y };
-			const Vector2 v1{ mesh.vertices[vertex1].position.x, mesh.vertices[vertex1].position.y };
-			const Vector2 v2{ mesh.vertices[vertex2].position.x, mesh.vertices[vertex2].position.y };
+			const Vector2 v0{ mesh.vertices_out[vertex0].position.x, mesh.vertices_out[vertex0].position.y };
+			const Vector2 v1{ mesh.vertices_out[vertex1].position.x, mesh.vertices_out[vertex1].position.y };
+			const Vector2 v2{ mesh.vertices_out[vertex2].position.x, mesh.vertices_out[vertex2].position.y };
 
 			const float totalTriangleArea{ Vector2::Cross(v1 - v0, v2 - v0) / 2 };
 
@@ -234,9 +243,9 @@ void Renderer::Render()
 
 					pixelDepth = 1.f / 
 						(
-							(weightV0 / mesh.vertices[vertex0].position.z) + 
-							(weightV1 / mesh.vertices[vertex1].position.z) + 
-							(weightV2 / mesh.vertices[vertex2].position.z)
+							(weightV0 * mesh.vertices_out[vertex0].position.w) + 
+							(weightV1 * mesh.vertices_out[vertex1].position.w) +
+							(weightV2 * mesh.vertices_out[vertex2].position.w)
 						);
 
 					//If the z point is not closer in this triangle check the next triangle
@@ -250,13 +259,10 @@ void Renderer::Render()
 
 					pixelUV =
 						(
-							((mesh.vertices[vertex0].uv * weightV0) / mesh.vertices[vertex0].position.z) +
-							((mesh.vertices[vertex1].uv * weightV1) / mesh.vertices[vertex1].position.z) +
-							((mesh.vertices[vertex2].uv * weightV2) / mesh.vertices[vertex2].position.z)
+							((mesh.vertices_out[vertex0].uv * weightV0) * mesh.vertices_out[vertex0].position.w) +
+							((mesh.vertices_out[vertex1].uv * weightV1) * mesh.vertices_out[vertex1].position.w) +
+							((mesh.vertices_out[vertex2].uv * weightV2) * mesh.vertices_out[vertex2].position.w)
 						) * pixelDepth;
-
-					pixelUV.x = std::clamp(pixelUV.x, 0.f, 1.f);
-					pixelUV.y = std::clamp(pixelUV.y, 0.f, 1.f);
 
 					ColorRGB finalColor{ m_pTexture->Sample(pixelUV) };
 
@@ -279,37 +285,39 @@ void Renderer::Render()
 	SDL_UpdateWindowSurface(m_pWindow);
 }
 
-void Renderer::VertexTransformationFunction(const std::vector<Vertex>& vertices_in, std::vector<Vertex>& vertices_out) const
+void Renderer::VertexTransformationFunction(Mesh& mesh) const
 {
 	//Todo > W1 Projection Stage
+	mesh.vertices_out.clear();
+	const Matrix worldViewProjectionMatrix{ mesh.worldMatrix * m_Camera.viewMatrix * m_Camera.projectionMatrix };
 
-	for(const auto& vertex : vertices_in)
+	for(const auto& vertex : mesh.vertices)
 	{
 		//World -> view space
-		Vector3 tempVertex = m_Camera.viewMatrix.TransformPoint(vertex.position) ;
-		const float aspectRatio{ (static_cast<float>(m_Width) / static_cast<float>(m_Height)) };
-
-		tempVertex.x /= aspectRatio  * m_Camera.fov;
-		tempVertex.y /= m_Camera.fov;
+		Vertex_Out vertexOut{};
+		vertexOut.position = worldViewProjectionMatrix.TransformPoint(vertex.position.x, vertex.position.y, vertex.position.z, 0);
+		vertexOut.color = vertex.color;
+		vertexOut.uv = vertex.uv;
 
 		//pespective divide = View space -> clipping space (NDC)
-		tempVertex.x /= tempVertex.z;
-		tempVertex.y /= tempVertex.z;
+		vertexOut.position.w = 1.f / vertexOut.position.w;
+		vertexOut.position.x *= vertexOut.position.w;
+		vertexOut.position.y *= vertexOut.position.w;
+		vertexOut.position.z *= vertexOut.position.w;
 
 		//NDC -> screen space
-		Vertex screenSpaceVertex{ vertex };
-		screenSpaceVertex.position =  { ((tempVertex.x + 1) / 2) * m_Width, ((1 - tempVertex.y) / 2) * m_Height, tempVertex.z } ;
-		vertices_out.push_back(screenSpaceVertex);
+		vertexOut.position.x = { ((vertexOut.position.x + 1) * 0.5f) * static_cast<float>(m_Width) };
+		vertexOut.position.y = { ((1 - vertexOut.position.y) * 0.5f) * static_cast<float>(m_Height) };
+
+		mesh.vertices_out.push_back(vertexOut);
 	}
 }
 
-void Renderer::VertexTransformationFunction(const std::vector<Mesh>& mesh_in, std::vector<Mesh>& mesh_out) const
+void Renderer::VertexTransformationFunction(std::vector<Mesh>& meshes) const
 {
-	mesh_out = mesh_in;
-	for(int index{}; index < mesh_in.size(); ++index)
+	for(auto& mesh : meshes)
 	{
-		mesh_out[index].vertices = {};
-		VertexTransformationFunction(mesh_in[index].vertices, mesh_out[index].vertices);
+		VertexTransformationFunction(mesh);
 	}
 }
 

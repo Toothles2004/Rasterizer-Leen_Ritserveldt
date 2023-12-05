@@ -163,8 +163,18 @@ namespace dae {
 	Matrix Matrix::CreatePerspectiveFovLH(float fov, float aspect, float zn, float zf)
 	{
 		//TODO W3
+		const Vector3 axisX{ 1 / (aspect * fov), 0, 0};
+		const Vector3 axisY{ 0, 1 / fov, 0};
+		const Vector3 axisZ{ 0, 0, zf / (zf - zn)};
+		const Vector3 axisW{ 0, 0,  -(zf * zn) / (zf - zn)};
 
-		return {};
+		return
+		{
+			Vector4{axisX.x, axisY.x, axisZ.x, 0},
+			Vector4{axisX.y, axisY.y, axisZ.y, 0},
+			Vector4{axisX.z, axisY.z, axisZ.z, 1},
+			Vector4{axisW.x, axisW.y, axisW.z, 0},
+		};
 	}
 
 	Vector3 Matrix::GetAxisX() const
