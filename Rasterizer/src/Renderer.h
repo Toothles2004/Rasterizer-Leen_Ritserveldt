@@ -36,7 +36,18 @@ namespace dae
 		void VertexTransformationFunction(Mesh& mesh) const;
 		void VertexTransformationFunction(std::vector<Mesh>& meshes) const;
 
+		void CycleRenderingMode();
+
 	private:
+		enum class RenderingMode
+		{
+			finalColor,
+			depthBuffer,
+			number
+		};
+
+		RenderingMode m_CurrentRenderMode{ RenderingMode::finalColor };
+
 		SDL_Window* m_pWindow{};
 
 		SDL_Surface* m_pFrontBuffer{ nullptr };
@@ -51,5 +62,7 @@ namespace dae
 		int m_Height{};
 
 		Texture* m_pTexture{};
+
+		std::vector<Mesh> m_Meshes;
 	};
 }

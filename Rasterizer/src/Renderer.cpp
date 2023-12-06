@@ -4,9 +4,14 @@
 
 //Project includes
 #include "Renderer.h"
+
+#include <execution>
+
 #include "Maths.h"
 #include "Texture.h"
 #include "Utils.h"
+
+#define PARALLEL_EXECUTION
 
 using namespace dae;
 
@@ -24,9 +29,17 @@ Renderer::Renderer(SDL_Window* pWindow) :
 	m_pDepthBufferPixels = new float[m_Width * m_Height];
 
 	//Initialize Camera
-	m_Camera.Initialize(static_cast<float>(m_Width) / m_Height, 60.f, { .0f,.0f, -10.f });
+	m_Camera.Initialize(static_cast<float>(m_Width) / m_Height, 60.f, { .0f,.5f, -30.f });
 
-	m_pTexture = Texture::LoadFromFile("Resources/uv_grid_2.png");
+	m_pTexture = Texture::LoadFromFile("Resources/tuktuk.png");
+
+	m_Meshes.push_back(Mesh{});
+	m_Meshes[0].primitiveTopology = PrimitiveTopology::TriangleList;
+	Utils::ParseOBJ("Resources/tuktuk.obj", m_Meshes[0].vertices, m_Meshes[0].indices);
+	m_Meshes[0].worldMatrix =
+	{
+		Matrix{}
+	};
 }
 
 Renderer::~Renderer()
@@ -89,66 +102,66 @@ void Renderer::Render()
 	//	{{meshesWorld[5].position}, {1, 1, 1}},
 	//};
 
-	//TriangleStrip
-	std::vector<Mesh> meshesWorldStrip
-	{
-		//Quad
-		Mesh
-		{
-			{
-			Vertex{{-3.f, 3.f, -2.f}, {}, {0, 0}},
-			Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
-			Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
-			Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
-			Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
-			Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
-			Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
-			Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
-			Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
-			},
+	////TriangleStrip
+	//std::vector<Mesh> meshesWorldStrip
+	//{
+	//	//Quad
+	//	Mesh
+	//	{
+	//		{
+	//		Vertex{{-3.f, 3.f, -2.f}, {}, {0, 0}},
+	//		Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
+	//		Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
+	//		Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
+	//		Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
+	//		Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
+	//		Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
+	//		Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
+	//		Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
+	//		},
 
-			{
-				3, 0, 4, 1, 5, 2,
-				2, 6,
-				6, 3, 7, 4, 8, 5
-			},
+	//		{
+	//			3, 0, 4, 1, 5, 2,
+	//			2, 6,
+	//			6, 3, 7, 4, 8, 5
+	//		},
 
-			PrimitiveTopology::TriangleStrip
-		}
-	};
+	//		PrimitiveTopology::TriangleStrip
+	//	}
+	//};
 
-	//TriangleList
-	std::vector<Mesh> meshesWorldList
-	{
-		//Quad
-		Mesh
-		{
-			{
-			Vertex{{-3.f, 3.f, -2.f}, {}, { 0, 0}},
-			Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
-			Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
-			Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
-			Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
-			Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
-			Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
-			Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
-			Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
-			},
+	////TriangleList
+	//std::vector<Mesh> meshesWorldList
+	//{
+	//	//Quad
+	//	Mesh
+	//	{
+	//		{
+	//		Vertex{{-3.f, 3.f, -2.f}, {}, { 0, 0}},
+	//		Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
+	//		Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
+	//		Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
+	//		Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
+	//		Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
+	//		Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
+	//		Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
+	//		Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
+	//		},
 
-			{
-				3, 0, 1,	1, 4, 3,	4, 1, 2,
-				2, 5, 4,	6, 3, 4,	4, 7, 6,
-				7, 4, 5,	5, 8, 7
-			},
+	//		{
+	//			3, 0, 1,	1, 4, 3,	4, 1, 2,
+	//			2, 5, 4,	6, 3, 4,	4, 7, 6,
+	//			7, 4, 5,	5, 8, 7
+	//		},
 
-			PrimitiveTopology::TriangleList
-		}
-	};
+	//		PrimitiveTopology::TriangleList
+	//	}
+	//};
 
-	VertexTransformationFunction(meshesWorldStrip);
+	VertexTransformationFunction(m_Meshes);
 
 	//RENDER LOGIC
-	for (auto& mesh : meshesWorldStrip)
+	for (auto& mesh : m_Meshes)
 	{
 		//Check all triangles
 		for (int triangleIndex{}; triangleIndex < static_cast<int>(mesh.indices.size() - 2); ++triangleIndex)
@@ -196,24 +209,22 @@ void Renderer::Render()
 			const float totalTriangleArea{ Vector2::Cross(v1 - v0, v2 - v0) / 2 };
 
 			//Create bounding box
-			TriangleBoundingBox boundingBox{};
-			boundingBox.CalculateBoundingBox(v0);
-			boundingBox.CalculateBoundingBox(v1);
-			boundingBox.CalculateBoundingBox(v2);
+			const float minX =
+				std::max(std::min(std::min(v0.x, v1.x), v2.x), 0.f);
+			const float minY =
+				std::max(std::min(std::min(v0.y, v1.y), v2.y), 0.f);
+
+			const float maxX =
+				std::min(std::max(std::max(v0.x, v1.x), v2.x), static_cast<float> (m_Width));
+			const float maxY =
+				std::min(std::max(std::max(v0.y, v1.y), v2.y), static_cast<float> (m_Height));
 
 			//Do pixel loop
-			for (int px{}; px < m_Width; ++px)
+			for (int px{ static_cast<int>(minX) }; px < maxX; ++px)
 			{
-				for (int py{}; py < m_Height; ++py)
+				for (int py{ static_cast<int>(minY) }; py < maxY; ++py)
 				{
-					
 					Vector2 pixel{ px + 0.5f, py + 0.5f };
-
-					//Ignore and continue if pixel is not in the bounding box
-					if (!(boundingBox.IsPointInBoundingBox(pixel)))
-					{
-						continue;
-					}
 
 					float pixelDepth{};
 					/*ColorRGB pixelColor{};*/
@@ -264,7 +275,22 @@ void Renderer::Render()
 							((mesh.vertices_out[vertex2].uv * weightV2) * mesh.vertices_out[vertex2].position.w)
 						) * pixelDepth;
 
-					ColorRGB finalColor{ m_pTexture->Sample(pixelUV) };
+					ColorRGB finalColor{};
+
+					switch (m_CurrentRenderMode)	
+					{
+					case dae::Renderer::RenderingMode::finalColor:
+						finalColor = m_pTexture->Sample(pixelUV);
+						break;
+					case dae::Renderer::RenderingMode::depthBuffer:
+						pixelDepth = Lerpf(1.f, 0.995f, pixelDepth);
+						finalColor = ColorRGB(pixelDepth, pixelDepth, pixelDepth);
+						break;
+					default:
+						break;
+					}
+
+					
 
 					//Update Color in Buffer
 					finalColor.MaxToOne();
@@ -324,4 +350,9 @@ void Renderer::VertexTransformationFunction(std::vector<Mesh>& meshes) const
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBackBuffer, "Rasterizer_ColorBuffer.bmp");
+}
+
+void Renderer::CycleRenderingMode()
+{
+	m_CurrentRenderMode = static_cast<RenderingMode>((static_cast<int>(m_CurrentRenderMode) + 1) % static_cast<int>(RenderingMode::number));
 }
