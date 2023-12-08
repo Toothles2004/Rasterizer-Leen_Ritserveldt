@@ -6,6 +6,7 @@
 #include "Renderer.h"
 
 #include <execution>
+#include <iostream>
 
 #include "Maths.h"
 #include "Texture.h"
@@ -16,7 +17,12 @@
 using namespace dae;
 
 Renderer::Renderer(SDL_Window* pWindow) :
-	m_pWindow(pWindow)
+	m_pWindow(pWindow),
+	m_DepthBufferOn(false),
+	m_RotatingOn(true),
+	m_NormalMappingOn(true),
+	m_Ambient({ 0.03f, 0.03f, 0.03f }),
+	m_Shininess(25.f)
 {
 	//Initialize
 	SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
@@ -29,13 +35,16 @@ Renderer::Renderer(SDL_Window* pWindow) :
 	m_pDepthBufferPixels = new float[m_Width * m_Height];
 
 	//Initialize Camera
-	m_Camera.Initialize(static_cast<float>(m_Width) / m_Height, 60.f, { .0f,.5f, -30.f });
+	m_Camera.Initialize(static_cast<float>(m_Width) / m_Height, 45.f, { .0f,.5f, -64.f });
 
-	m_pTexture = Texture::LoadFromFile("Resources/tuktuk.png");
+	m_pTextureDiffuse = Texture::LoadFromFile("Resources/vehicle_diffuse.png");
+	m_pTextureGloss = Texture::LoadFromFile("Resources/vehicle_gloss.png");
+	m_pTextureNormal = Texture::LoadFromFile("Resources/vehicle_normal.png");
+	m_pTextureSpecular = Texture::LoadFromFile("Resources/vehicle_specular.png");
 
 	m_Meshes.push_back(Mesh{});
 	m_Meshes[0].primitiveTopology = PrimitiveTopology::TriangleList;
-	Utils::ParseOBJ("Resources/tuktuk.obj", m_Meshes[0].vertices, m_Meshes[0].indices);
+	Utils::ParseOBJ("Resources/vehicle.obj", m_Meshes[0].vertices, m_Meshes[0].indices);
 	m_Meshes[0].worldMatrix =
 	{
 		Matrix{}
@@ -50,6 +59,10 @@ Renderer::~Renderer()
 void Renderer::Update(Timer* pTimer)
 {
 	m_Camera.Update(pTimer);
+	if(m_RotatingOn)
+	{
+		m_Meshes[0].worldMatrix = Matrix::CreateRotationY(pTimer->GetTotal() / 2) * Matrix::CreateTranslation(0, 0, -40.f);
+	}
 }
 
 void Renderer::Render()
@@ -63,100 +76,6 @@ void Renderer::Render()
 	{
 		m_pDepthBufferPixels[index] = INFINITY;
 	}
-
-	/*Vertex v0{ {0.f, 0.5f, 1.f} };
-	Vertex v1{ {0.5f, -0.5f, 1.f} };
-	Vertex v2{ {-0.5f, -0.5f, 1.f} };*/
-
-	//const std::vector<Vertex> triangle{ {{0.f, 2.f, 0.f}}, {{1.f, 0.f, 0.f}}, {{-1.f, 0.f, 0.f}} };
-
-	//const std::vector<Vertex> triangle
-	//{
-	//	//Triangle 0
-	//	{{0.f, 2.f, 0.f}, {1, 0, 0}},
-	//	{{1.5f, -1.f, 0.f}, {1, 0, 0}},
-	//	{{-1.5f, -1.f, 0.f}, {1, 0, 0}},
-
-	//	//Triangle 1
-	//	{{0.f, 4.f, 2.f}, {1, 0, 0}},
-	//	{{3.0f, -2.f, 2.f}, {0, 1, 0}},
-	//	{{-3.f, -2.f, 2.f}, {0, 0, 1}}
-	//};
-
-	//const std::vector<Vertex> triangle
-	//{
-	//	{{meshesWorld[3].position}, {1, 1, 1}}, //Triangle 0 (3,0,4)
-	//	{{meshesWorld[0].position}, {1, 1, 1}}, //Triangle 1 (0, 4, 1)
-	//	{{meshesWorld[4].position}, {1, 1, 1}}, //Triangle 2 (4, 1, 5)
-	//	{{meshesWorld[1].position}, {1, 1, 1}}, //Triangle 3 (1, 5, 2)
-	//	{{meshesWorld[5].position}, {1, 1, 1}},
-	//	{{meshesWorld[2].position}, {1, 1, 1}},
-	//	{{meshesWorld[2].position}, {1, 1, 1}},
-
-	//	{{meshesWorld[6].position}, {1, 1, 1}},
-	//	{{meshesWorld[6].position}, {1, 1, 1}}, //Triangle 4 (6, 3, 7)
-	//	{{meshesWorld[3].position}, {1, 1, 1}}, //Triangle 5 (3, 7, 4)
-	//	{{meshesWorld[7].position}, {1, 1, 1}}, //Triangle 6 (7, 4, 8)
-	//	{{meshesWorld[4].position}, {1, 1, 1}}, //Triangle 7 (4, 8, 5)
-	//	{{meshesWorld[8].position}, {1, 1, 1}},
-	//	{{meshesWorld[5].position}, {1, 1, 1}},
-	//};
-
-	////TriangleStrip
-	//std::vector<Mesh> meshesWorldStrip
-	//{
-	//	//Quad
-	//	Mesh
-	//	{
-	//		{
-	//		Vertex{{-3.f, 3.f, -2.f}, {}, {0, 0}},
-	//		Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
-	//		Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
-	//		Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
-	//		Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
-	//		Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
-	//		Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
-	//		Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
-	//		Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
-	//		},
-
-	//		{
-	//			3, 0, 4, 1, 5, 2,
-	//			2, 6,
-	//			6, 3, 7, 4, 8, 5
-	//		},
-
-	//		PrimitiveTopology::TriangleStrip
-	//	}
-	//};
-
-	////TriangleList
-	//std::vector<Mesh> meshesWorldList
-	//{
-	//	//Quad
-	//	Mesh
-	//	{
-	//		{
-	//		Vertex{{-3.f, 3.f, -2.f}, {}, { 0, 0}},
-	//		Vertex{{0.f, 3.f, -2.f}, {}, {0.5f, 0}},
-	//		Vertex{{3.f, 3.f, -2.f}, {}, {1, 0}},
-	//		Vertex{{-3.f, 0.f, -2.f}, {}, {0, 0.5f}},
-	//		Vertex{{0.f, 0.f, -2.f}, {}, {0.5f, 0.5f}},
-	//		Vertex{{3.f, 0.f, -2.f}, {}, {1, 0.5f}},
-	//		Vertex{{-3.f, -3.f, -2.f}, {}, {0, 1}},
-	//		Vertex{{0.f, -3.f, -2.f}, {}, {0.5, 1}},
-	//		Vertex{{3.f, -3.f, -2.f}, {}, {1, 1}}
-	//		},
-
-	//		{
-	//			3, 0, 1,	1, 4, 3,	4, 1, 2,
-	//			2, 5, 4,	6, 3, 4,	4, 7, 6,
-	//			7, 4, 5,	5, 8, 7
-	//		},
-
-	//		PrimitiveTopology::TriangleList
-	//	}
-	//};
 
 	VertexTransformationFunction(m_Meshes);
 
@@ -252,12 +171,19 @@ void Renderer::Render()
 						mesh.vertices[vertex1].color * weightV1 +
 						mesh.vertices[vertex2].color * weightV2;*/
 
+					//Calculate the pixel depth
 					pixelDepth = 1.f / 
 						(
 							(weightV0 * mesh.vertices_out[vertex0].position.w) + 
 							(weightV1 * mesh.vertices_out[vertex1].position.w) +
 							(weightV2 * mesh.vertices_out[vertex2].position.w)
 						);
+					const float interpolatedZ = 1.f /
+						(
+							((mesh.vertices_out[vertex0].position.z) * weightV0) +
+							((mesh.vertices_out[vertex1].position.z) * weightV1) +
+							((mesh.vertices_out[vertex2].position.z) * weightV2)
+							);
 
 					//If the z point is not closer in this triangle check the next triangle
 					if (!(pixelDepth <= m_pDepthBufferPixels[px + (py * m_Width)]))
@@ -268,6 +194,7 @@ void Renderer::Render()
 					//Set z buffer to closer point
 					m_pDepthBufferPixels[px + (py * m_Width)] = pixelDepth;
 
+					//Calculate the pixel UV
 					pixelUV =
 						(
 							((mesh.vertices_out[vertex0].uv * weightV0) * mesh.vertices_out[vertex0].position.w) +
@@ -277,20 +204,50 @@ void Renderer::Render()
 
 					ColorRGB finalColor{};
 
-					switch (m_CurrentRenderMode)	
+					//show buffer depth with 0-1  greyscale if m_DepthBufferOn is on, otherwise show normal texture
+					if(m_DepthBufferOn)
 					{
-					case dae::Renderer::RenderingMode::finalColor:
-						finalColor = m_pTexture->Sample(pixelUV);
-						break;
-					case dae::Renderer::RenderingMode::depthBuffer:
 						pixelDepth = Lerpf(1.f, 0.995f, pixelDepth);
 						finalColor = ColorRGB(pixelDepth, pixelDepth, pixelDepth);
-						break;
-					default:
-						break;
 					}
+					else
+					{
+						//Shading function
+						Vertex_Out currentVertex{};
+						currentVertex.uv = pixelUV;
+						currentVertex.position =
+						{
+							pixel.x,
+							pixel.y,
+							interpolatedZ,
+							pixelDepth
+						};
 
-					
+						currentVertex.normal =
+							(
+								((mesh.vertices_out[vertex0].normal * weightV0) * mesh.vertices_out[vertex0].position.w) +
+								((mesh.vertices_out[vertex1].normal * weightV1) * mesh.vertices_out[vertex1].position.w) +
+								((mesh.vertices_out[vertex2].normal * weightV2) * mesh.vertices_out[vertex2].position.w)
+							);
+						currentVertex.normal.Normalize();
+
+						currentVertex.tangent =
+							(
+								((mesh.vertices_out[vertex0].tangent * weightV0) * mesh.vertices_out[vertex0].position.w) +
+								((mesh.vertices_out[vertex1].tangent * weightV1) * mesh.vertices_out[vertex1].position.w) +
+								((mesh.vertices_out[vertex2].tangent * weightV2) * mesh.vertices_out[vertex2].position.w)
+							);
+						currentVertex.tangent.Normalize();
+
+						currentVertex.viewDirection = 
+							(
+								((mesh.vertices_out[vertex0].viewDirection * weightV0) * mesh.vertices_out[vertex0].position.w) +
+								((mesh.vertices_out[vertex1].viewDirection * weightV1) * mesh.vertices_out[vertex1].position.w) +
+								((mesh.vertices_out[vertex2].viewDirection * weightV2) * mesh.vertices_out[vertex2].position.w)
+							);
+
+						finalColor = PixelShading(currentVertex);
+					}
 
 					//Update Color in Buffer
 					finalColor.MaxToOne();
@@ -324,6 +281,9 @@ void Renderer::VertexTransformationFunction(Mesh& mesh) const
 		vertexOut.position = worldViewProjectionMatrix.TransformPoint(vertex.position.x, vertex.position.y, vertex.position.z, 0);
 		vertexOut.color = vertex.color;
 		vertexOut.uv = vertex.uv;
+		vertexOut.normal = mesh.worldMatrix.TransformVector(vertex.normal);
+		vertexOut.tangent = mesh.worldMatrix.TransformVector(vertex.tangent);
+		vertexOut.viewDirection = mesh.worldMatrix.TransformPoint(vertex.position) - m_Camera.origin;
 
 		//pespective divide = View space -> clipping space (NDC)
 		vertexOut.position.w = 1.f / vertexOut.position.w;
@@ -347,12 +307,93 @@ void Renderer::VertexTransformationFunction(std::vector<Mesh>& meshes) const
 	}
 }
 
+ColorRGB Renderer::PixelShading(const Vertex_Out& v)
+{
+	const Vector3 lightDirection = { .577f, -.577f, .577f };
+	const Vector3 binormal = Vector3::Cross(v.normal, v.tangent);
+	const float lightIntensity{ 7.f };
+
+	ColorRGB currentFinalColor{};
+
+	
+	ColorRGB glossSample = m_pTextureGloss->Sample(v.uv);
+	ColorRGB specularSample = m_pTextureSpecular->Sample(v.uv);
+	ColorRGB diffuseSample = m_pTextureDiffuse->Sample(v.uv);
+
+	diffuseSample = (diffuseSample * lightIntensity) / PI;
+
+	Matrix tangentSpaceAxis = Matrix{ v.tangent, binormal, v.normal, Vector3::Zero };
+	Vector3 normals{};
+
+	if(m_NormalMappingOn)
+	{
+		ColorRGB normalSample = m_pTextureNormal->Sample(v.uv);
+		normalSample /= 255.f;
+		normalSample *= 2.f;
+		normalSample -= ColorRGB(1.f, 1.f, 1.f);
+
+		normals = tangentSpaceAxis.TransformVector(Vector3(normalSample.r, normalSample.g, normalSample.b));
+	}
+	else
+	{
+		normals = v.normal;
+	}
+
+	const float observedArea{ Vector3::Dot(normals, lightDirection) };
+
+	glossSample *= m_Shininess;
+	specularSample = specularSample * powf(std::max(Vector3::Dot(lightDirection - (2.f * std::max(Vector3::Dot(normals, lightDirection), 0.f) * normals), v.viewDirection), 0.f), glossSample.r);
+	specularSample.MaxToOne();
+
+	
+	switch (m_CurrentShadingMode)
+	{
+	case dae::Renderer::ShadingMode::observedArea:
+		if (observedArea > 0.f)
+		{
+			currentFinalColor = ColorRGB(observedArea, observedArea, observedArea);
+		}
+		break;
+	case dae::Renderer::ShadingMode::diffuse:
+		currentFinalColor = diffuseSample + m_Ambient;
+		break;
+	case dae::Renderer::ShadingMode::specular:
+		currentFinalColor = specularSample;
+		break;
+	case dae::Renderer::ShadingMode::combined:
+		if (observedArea > 0.f)
+		{
+			currentFinalColor = observedArea * (diffuseSample + m_Ambient + specularSample);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return currentFinalColor;
+}
+
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBackBuffer, "Rasterizer_ColorBuffer.bmp");
 }
 
-void Renderer::CycleRenderingMode()
+void Renderer::ToggleDepthBuffer()
 {
-	m_CurrentRenderMode = static_cast<RenderingMode>((static_cast<int>(m_CurrentRenderMode) + 1) % static_cast<int>(RenderingMode::number));
+	m_DepthBufferOn = !m_DepthBufferOn;
+}
+
+void Renderer::ToggleRotate()
+{
+	m_RotatingOn = !m_RotatingOn;
+}
+
+void Renderer::ToggleNormalMapping()
+{
+	m_NormalMappingOn = !m_NormalMappingOn;
+}
+
+void Renderer::CycleShadingMode()
+{
+	m_CurrentShadingMode = static_cast<ShadingMode>((static_cast<int>(m_CurrentShadingMode) + 1) % static_cast<int>(ShadingMode::number));
 }

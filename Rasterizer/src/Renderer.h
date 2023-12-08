@@ -10,6 +10,7 @@ struct SDL_Surface;
 
 namespace dae
 {
+	struct Vertex_Out;
 	class Texture;
 	struct Mesh;
 	struct Vertex;
@@ -36,17 +37,24 @@ namespace dae
 		void VertexTransformationFunction(Mesh& mesh) const;
 		void VertexTransformationFunction(std::vector<Mesh>& meshes) const;
 
-		void CycleRenderingMode();
+		ColorRGB PixelShading(const Vertex_Out& v);
+
+		void ToggleDepthBuffer();
+		void ToggleRotate();
+		void ToggleNormalMapping();
+		void CycleShadingMode();
 
 	private:
-		enum class RenderingMode
+		enum class ShadingMode
 		{
-			finalColor,
-			depthBuffer,
+			observedArea,
+			diffuse,
+			specular,
+			combined,
 			number
 		};
 
-		RenderingMode m_CurrentRenderMode{ RenderingMode::finalColor };
+		ShadingMode m_CurrentShadingMode{ShadingMode::combined };
 
 		SDL_Window* m_pWindow{};
 
@@ -61,8 +69,18 @@ namespace dae
 		int m_Width{};
 		int m_Height{};
 
-		Texture* m_pTexture{};
+		Texture* m_pTextureDiffuse{};
+		Texture* m_pTextureGloss{};
+		Texture* m_pTextureNormal{};
+		Texture* m_pTextureSpecular{};
 
 		std::vector<Mesh> m_Meshes;
+
+		bool m_DepthBufferOn;
+		bool m_RotatingOn;
+		bool m_NormalMappingOn;
+
+		ColorRGB m_Ambient;
+		float m_Shininess;
 	};
 }

@@ -67,10 +67,14 @@ int main(int argc, char* args[])
 			case SDL_KEYUP:
 				if (e.key.keysym.scancode == SDL_SCANCODE_X)
 					takeScreenshot = true;
-				break;
-			case SDL_KEYDOWN:
 				if (e.key.keysym.scancode == SDL_SCANCODE_F4)
-					pRenderer->CycleRenderingMode();
+					pRenderer->ToggleDepthBuffer();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F5)
+					pRenderer->ToggleRotate();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F6)
+					pRenderer->ToggleNormalMapping();
+				if (e.key.keysym.scancode == SDL_SCANCODE_F7)
+					pRenderer->CycleShadingMode();
 				break;
 			}
 		}
